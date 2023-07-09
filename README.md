@@ -5,4 +5,5 @@ Project using Flet and python.
 
 DEMO
 
-[Flet_rename.webm](https://github.com/Sedrini/FileRenamerGUI/assets/36553765/9ff9df47-3846-40e9-87b0-46cc5565c072)
+
+[Flet_rename.webm](https://github.com/Sedrini/FileRenamerGUI/assets/36553765/3f0945fb-5c27-4c9f-a615-88e02699ccb1)
