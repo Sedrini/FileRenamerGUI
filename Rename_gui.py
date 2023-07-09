@@ -15,12 +15,12 @@ def main(page: ft.Page):
 
     # RENAME FUNCTION SHUTIL
     def rename_files(e):
-        if directory_path.value is None or file_exten.value == "":
+        if directory_path.value is None:
             open_dlg(e)
         else:
             for filename in os.listdir(directory_path.value):
                 try:
-                    if word_del.value in filename and filename.endswith(file_exten.value):
+                    if word_del.value in filename and (file_exten.value == "" or filename.endswith(file_exten.value)):
                         new_filename = filename.replace(word_del.value, word_new.value)
                         old_path = os.path.join(directory_path.value, filename)
                         new_path = os.path.join(directory_path.value, new_filename)
