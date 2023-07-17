@@ -1,105 +1,116 @@
-# GUI IMPORT 
 import flet as ft
-from flet import ElevatedButton, FilePicker, FilePickerResultEvent, Text, icons
-#RENAME FILES IMPORT
 import os
 import shutil
 
 
-def main(page: ft.Page):
-    # ALTER DIALOG WHEN A SPACE IS EMPTY
-    dlg = ft.AlertDialog(
-        title=ft.Text("Something is empty wachuchi"), on_dismiss=lambda e: None)
+class RenameGUI:
+    def __init__(self, page):
+        self.page = page
+        self.setup_widgets()
+        self.page.on_route_change = self.route_change
+        self.page.on_view_pop = self.view_pop
+        self.page.go(self.page.route)
 
-    def open_dlg(e):
-        page.dialog = dlg
-        dlg.open = True
-        page.update()
-    # RENAME FUNCTION SHUTIL
-    def rename_files(e):
-        if directory_path.value is None:
-            open_dlg(e)
+    def setup_widgets(self):
+        self.page.title = "Flet Rename Files"
+        self.page.window_width = 600
+        self.page.window_height = 700
+        self.page.window_resizable = False
+
+        # ALTER DIALOG WHEN A SPACE IS EMPTY
+        self.get_directory_dialog = ft.FilePicker(on_result=self.get_directory_result)
+        self.directory_path = ft.Text()
+        self.page.overlay.extend([self.get_directory_dialog])
+
+        #Menu Widgets
+        self.rename_go = ft.ElevatedButton("Rename GUI", on_click=lambda _: self.page.go("/rename"))
+        self.move_go = ft.ElevatedButton("Move GUI", on_click=lambda _: self.page.go("/move"))
+        #Rename Widgets
+        self.path_btn = ft.ElevatedButton("Folder Path",icon=ft.icons.FOLDER_OPEN,
+        on_click=lambda _: self.get_directory_dialog.get_directory_path(),
+        disabled=self.page.web,)
+        self.re_switch = ft.Switch(label="Sub_dire", value=False)
+        self.word_del = ft.TextField(hint_text="Word to delete", width=300)
+        self.file_exten = ft.TextField(hint_text="Extension", width=100)
+        self.word_new = ft.TextField(hint_text="New Word, empty to delete", width=300)
+
+
+    def rename_script(self, e):
+        if self.directory_path.value is None:
+            self.open_dlg(e)
         else:
-            for filename in os.listdir(directory_path.value):
-                try:
-                    if word_del.value in filename and (file_exten.value == "" or filename.endswith(file_exten.value)):
-                        new_filename = filename.replace(word_del.value, word_new.value)
-                        old_path = os.path.join(directory_path.value, filename)
-                        new_path = os.path.join(directory_path.value, new_filename)
-                        shutil.move(old_path, new_path)
-                except:
-                    open_dlg(e)
-    
-    # PAGE THINGS
-    page.title = "Flet Rename Files"
-    page.window_width = 600        # window's width is 200 px
-    page.window_height = 800       # window's height is 200 px
-    page.window_resizable = False  # window is not resizable
+            for root, dirs, files in os.walk(self.directory_path.value):
+                if not self.re_switch.value:  # Si switch es False, omitir los subdirectorios
+                    if root != self.directory_path.value:
+                        continue
+                for filename in files:
+                    try:
+                        if (
+                            self.word_del.value in filename
+                            and (self.file_exten.value == "" or filename.endswith(self.file_exten.value))
+                        ):
+                            old_path = os.path.join(root, filename)
+                            new_filename = filename.replace(self.word_del.value, self.word_new.value)
+                            new_path = os.path.join(root, new_filename)
+                            shutil.move(old_path, new_path)
+                    except:
+                        self.open_dlg(e)
 
-    # ROUte thin to change page
-    def route_change(route):
-        page.views.clear()
-        page.views.append(
+
+    def open_dlg(self, e):
+        self.dlg = ft.AlertDialog(title=ft.Text("Something is empty wachuchi"), on_dismiss=lambda e: None) # Alert when a textfield is empty
+        self.page.dialog = self.dlg
+        self.dlg.open = True
+        self.page.update()
+
+
+    def get_directory_result(self, e: ft.FilePickerResultEvent):
+        self.directory_path.value = e.path if e.path else "Cancelled"
+        self.directory_path.update()
+
+
+    def route_change(self, route):
+        self.page.views.clear()
+        self.page.views.append(
             ft.View(
                 "/",
                 [
                     ft.AppBar(title=ft.Text("Flet app"), bgcolor=ft.colors.SURFACE_VARIANT),
-                    ft.ElevatedButton("Rename GUI", on_click=lambda _: page.go("/rename")),
+                    ft.Row([self.rename_go,self.move_go])
                 ],
             )
         )
-        if page.route == "/rename":
-            page.views.append(
+        if self.page.route == "/rename":
+            self.page.views.append(
                 ft.View(
-                "/",
-                [
-                    ft.AppBar(title=ft.Text("Rename GUI"), bgcolor=ft.colors.SURFACE_VARIANT),
-                    path_btn, directory_path,
-                    ft.Row([word_del, file_exten]),
-                    word_new,
-                    ft.ElevatedButton(text="Action", on_click=rename_files)
-                ],
+                    "/rename",
+                    [
+                        ft.AppBar(title=ft.Text("Rename GUI"), bgcolor=ft.colors.SURFACE_VARIANT),
+                        ft.Row([self.path_btn, self.re_switch]),
+                        self.directory_path,
+                        ft.Row([self.word_del, self.file_exten]),
+                        self.word_new,
+                        ft.ElevatedButton(text="Action", on_click=self.rename_script),
+                    ],
+                )
+            ),
+        elif self.page.route == "/move":
+            self.page.views.append(
+                ft.View(
+                    "/move",
+                    [
+                        ft.AppBar(title=ft.Text("Move GUI"), bgcolor=ft.colors.SURFACE_VARIANT),
+                    ],
                 )
             )
-        page.update()
-            
-    def view_pop(view):
-        page.views.pop()
-        top_view = page.views[-1]
-        page.go(top_view.route)
 
-    # PATH NECESSARY
-    def get_directory_result(e: FilePickerResultEvent):
-        directory_path.value = e.path if e.path else "Cancelled!"
-        directory_path.update()
-
-    get_directory_dialog = FilePicker(on_result=get_directory_result)
-    directory_path = Text()
-    page.overlay.extend([get_directory_dialog])
-
-    # THINGS TO ADD TO PAGE.ADD
-    path_btn = ElevatedButton(
-        "Folder Path",
-        icon=icons.FOLDER_OPEN,
-        on_click=lambda _: get_directory_dialog.get_directory_path(),
-        disabled=page.web
-    )
-    
-    word_del = ft.TextField(hint_text='Word to delete', width=300)
-    file_exten = ft.TextField(hint_text='Extension', width=90)
-    word_new = ft.TextField(hint_text='New Word, empty to delete', width=300)
-
-    page.add( 
-        path_btn, directory_path,
-        ft.Row([word_del, file_exten]),
-        word_new,
-        ft.ElevatedButton(text="Action", on_click=rename_files)
-    )
-    
+        self.page.update()
 
 
-    page.on_route_change = route_change
-    page.on_view_pop = view_pop
-    page.go(page.route)
+    def view_pop(self, view):
+        self.page.views.pop()
+        top_view = self.page.views[-1]
+        self.page.go(top_view.route)
 
-ft.app(target=main)
+
+ft.app(target=RenameGUI)
