@@ -1,5 +1,6 @@
-# FileRenamerGUI
-Rename Files with a specific file extension with python using Flet
+#  FileUtilityGUI
+
+Rename, move: folders and files with a specific file extension with python using Flet
 
 Project using Flet and python.
 
