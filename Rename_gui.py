@@ -2,7 +2,7 @@ import flet as ft
 import os
 import shutil
 # Scripts
-from Tools import rename_foiles, move_files
+from Tools import rename_foiles, moves_files, delet_files
 
 class RenameGUI:
     def __init__(self, page):
@@ -19,7 +19,7 @@ class RenameGUI:
         self.page.window_resizable = False
 
 
-        # Move bun
+        # Move butn
         self.get_directory_dialog2 = ft.FilePicker(on_result=self.get_directory_move)
         self.directory_move = ft.Text()
         self.page.overlay.extend([self.get_directory_dialog2])
@@ -30,11 +30,13 @@ class RenameGUI:
         #Menu Widgets
         self.rename_go = ft.ElevatedButton("Rename GUI", on_click=lambda _: self.page.go("/rename"))
         self.move_go = ft.ElevatedButton("Move GUI", on_click=lambda _: self.page.go("/move"))
+        self.delete_go = ft.ElevatedButton("Delete GUI", on_click=lambda _: self.page.go("/delete"))
+
         #Rename Widgets
         self.path_btn = ft.ElevatedButton("Folder",icon=ft.icons.FOLDER_OPEN,
         on_click=lambda _: self.get_directory_dialog.get_directory_path(), disabled=self.page.web,)
 
-        self.re_switch = ft.Switch(label="Sub-Files", value=False)
+        self.sub_switch = ft.Switch(label="Sub-Files", value=False)
         self.dir_switch = ft.Switch(label="Folders Mode", value=False, on_change=self.dir_mode)
         self.word_del = ft.TextField(hint_text="Word to delete", width=300)
         self.file_exten = ft.TextField(hint_text="Extension", width=100,disabled=False)
@@ -49,18 +51,18 @@ class RenameGUI:
     # Scripts to a
     def rename_script(self, e):
         if self.directory_path.value is None:
-            self.open_dlg(e)
+            self.open_dlg(e, "Directory Empty")
         else:
             try:
                 rename_foiles(
                     directory_path=self.directory_path.value,
-                    re_switch=self.re_switch.value,
+                    sub_switch=self.sub_switch.value,
                     word_del=self.word_del.value,
                     file_exten=self.file_exten.value,
                     word_new=self.word_new.value,dir_mode=self.dir_switch.value,
                 )
             except Exception as ex:
-                self.open_dlg(e)
+                self.open_dlg(e, "Exception")
     
     def dir_mode(self, e):
         if self.dir_switch.value == True:
@@ -69,33 +71,45 @@ class RenameGUI:
              self.file_exten.disabled = False
         self.page.update()
 
-
-    def move_files(self, e):
+    def movet_files(self, e):
         if self.directory_path.value is None or self.directory_move.value is None or self.directory_path.value == self.directory_move.value :
-            self.open_dlg(e)
+            self.open_dlg(e, "Error Directory")
 
         try:
-            move_files(
+            moves_files(
                 directory_path=self.directory_path.value,
                 directory_move=self.directory_move.value,
                 reversepath=self.reversepath.value,
-                re_switch=self.re_switch.value,
-                file_exten=self.file_exten.value,
+                sub_switch=self.sub_switch.value,
+                file_exten=self.file_exten.value,dir_mode=self.dir_switch.value,
             )
         except Exception as ex:
-            self.open_dlg(e)
+            self.open_dlg(e, "Exception")
 
             if self.reversepath.value:
                 # Swap the values back to their original positions after moving the files
                 self.directory_path.value, self.directory_move.value = self.directory_move.value, self.directory_path.value
 
+    def delete_files(self,e):
+        if self.directory_path.value is None:
+            self.open_dlg(e, "Error Directory")
+
+        try:
+            delet_files(directory_path=self.directory_path.value,
+                        sub_switch=self.sub_switch.value,
+                        file_exten=self.file_exten.value,
+                        )
+        
+        except:
+            print('Something bad happen')
+
+
     #Finish scripts
-    def open_dlg(self, e):
-        self.dlg = ft.AlertDialog(title=ft.Text("Something is empty wachuchi"), on_dismiss=lambda e: None) # Alert when a textfield is empty
+    def open_dlg(self, e, message):
+        self.dlg = ft.AlertDialog(title=ft.Text(message), on_dismiss=lambda e: None) # Alert when a textfield is empty
         self.page.dialog = self.dlg
         self.dlg.open = True
         self.page.update()
-
 
     def get_directory_result(self, e: ft.FilePickerResultEvent):
         self.directory_path.value = e.path if e.path else "Cancelled"
@@ -113,7 +127,7 @@ class RenameGUI:
                 "/",
                 [
                     ft.AppBar(title=ft.Text("Flet app"), bgcolor=ft.colors.SURFACE_VARIANT),
-                    ft.Row([self.rename_go,self.move_go])
+                    ft.Row([self.rename_go,self.move_go,self.delete_go])
                 ],
             )
         )
@@ -123,7 +137,7 @@ class RenameGUI:
                     "/rename",
                     [
                         ft.AppBar(title=ft.Text("Rename GUI"), bgcolor=ft.colors.SURFACE_VARIANT),
-                        ft.Row([self.path_btn, self.re_switch,self.dir_switch]),
+                        ft.Row([self.path_btn, self.sub_switch,self.dir_switch]),
                         self.directory_path,
                         ft.Row([self.word_del, self.file_exten]),
                         self.word_new,
@@ -137,10 +151,24 @@ class RenameGUI:
                     "/move",
                     [
                         ft.AppBar(title=ft.Text("Move GUI"), bgcolor=ft.colors.SURFACE_VARIANT),
-                        ft.Row([self.path_btn ,self.path_move,self.re_switch,self.reversepath]),
-                        ft.Row([self.file_exten]),
+                        ft.Row([self.path_btn ,self.path_move,self.sub_switch,self.reversepath]),
+                        ft.Row([self.file_exten,self.dir_switch]),
                         ft.Text('From here: '),self.directory_path,ft.Text('To here: '),self.directory_move,
-                        ft.ElevatedButton(text="Action", on_click=self.move_files),
+                        ft.ElevatedButton(text="Action", on_click=self.movet_files),
+
+                    ],
+                )
+            )
+        elif self.page.route == "/delete":
+            self.page.views.append(
+                ft.View(
+                    "/move",
+                    [
+                        ft.AppBar(title=ft.Text("Delete GUI"), bgcolor=ft.colors.SURFACE_VARIANT),
+                        ft.Row([self.path_btn ,self.sub_switch,self.file_exten]),
+                        self.directory_path,
+                        ft.ElevatedButton(text="Action", on_click=self.delete_files),
+                    
 
                     ],
                 )
